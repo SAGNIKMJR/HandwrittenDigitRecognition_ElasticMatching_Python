@@ -135,16 +135,16 @@ def mask(mask_data, resized_size, hyperparameter_list):
 
     image_count = 0
     for image_file in file_list:
-    	image_file_path = os.path.join(mask_data, image_file)
-    	image = Image.open(image_file_path)
-    	label = image_file_path[len(image_file_path):len(image_file_path)+1]
-    	image =np.array(image)
+		image_file_path = os.path.join(mask_data, image_file)
+		image = Image.open(image_file_path)
+		label = image_file_path[len(image_file_path):len(image_file_path)+1]
+		image =np.array(image)
 
-   		gabor_wavelets = Transform(number_of_scales=hyperparameter_list[0], \
-   								number_of_directions=hyperparameter_list[1], \
-   								sigma=hyperparameter_list[3], \
-   								k_max=hyperparameter_list[3], \
-   								k_fac=hyperparameter_list[4])
+		gabor_wavelets = Transform(number_of_scales=hyperparameter_list[0], \
+								number_of_directions=hyperparameter_list[1], \
+								sigma=hyperparameter_list[3], \
+								k_max=hyperparameter_list[3], \
+								k_fac=hyperparameter_list[4])
 		image_transformed = gabor_wavelets.transform(image)
 		image_mask = np.empty((8, resized_size//2, resized_size//2),'complex128')
 
@@ -153,12 +153,14 @@ def mask(mask_data, resized_size, hyperparameter_list):
 				for col in range(0,resized_size,2):
 					image_mask[wavelet_no, row/2, col/2] = image_transformed[wavelet_no, row, col]
 
-		if image_count = 0:
+		if image_count == 0:
 			image_mask_label_array=np.array([image_mask, label, os.path.join(match_data, image_file)])
 		else:
-			image_mask_label_array=np.vstack([image_mask_label_array, np.array([image_mask_label_array, label, os.path.join(match_data, image_file)])])
+			image_mask_label_array=np.vstack([image_mask_label_array, \
+											np.array([image_mask_label_array, label, \
+											os.path.join(match_data, image_file)])])
 
-		image_count = image_count+1
+		image_count += 1
 
 		return image_mask_label_array
 
@@ -174,10 +176,10 @@ def eval(eval_data, mask_data, resized_size, image_mask_label_array, log, hyperp
     image_count_match = 0
 
     for image_file in file_list:
-    	image_file_path = os.path.join(eval_data, image_file)
-    	image = Image.open(image_file_path)
-    	label = image_file_path[len(image_file_path):len(image_file_path)+1]
-    	image =np.array(image)
+		image_file_path = os.path.join(eval_data, image_file)
+		image = Image.open(image_file_path)
+		label = image_file_path[len(image_file_path):len(image_file_path)+1]
+		image =np.array(image)
 
    		gabor_wavelets = Transform(number_of_scales=hyperparameter_list[0], \
    								number_of_directions=hyperparameter_list[1], \
@@ -203,9 +205,9 @@ def eval(eval_data, mask_data, resized_size, image_mask_label_array, log, hyperp
 			log.write("Wrong Match Image File:{}".format(match_file_path))
 		if image_count%int(args.print_freq) == 0:
 			print("Iteration No.:{}".format(image_count))\
-			print("Current Evaluation Accuracy:".format((image_count_match*100.)/image_count))
+			print("Current Evaluation Accuracy:{}".format((image_count_match*100.)/image_count))
 			log.write("Iteration No.:{}".format(image_count))
-			log.write("Current Evaluation Accuracy:".format((image_count_match*100.)/image_count))
+			log.write("Current Evaluation Accuracy:{}".format((image_count_match*100.)/image_count))
 
 		return (image_count_match*100.)/image_count
 
