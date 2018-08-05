@@ -7,11 +7,11 @@ pip install -r requirements.txt
 ```    
      
 # Running Code -      
-_Check avalailable command line arguments:_       
+__Check avalailable command line arguments:__          
 ```sh
 python2 main.py --help
 ```    
-_Run main.py by with or without argument values in the command line:_  
+__Run main.py by with or without argument values in the command line:__    
 i) Without specifying argument values:    
 ```sh
 python2 main.py
