@@ -7,16 +7,16 @@ from lib.cmdparser import parser
 import lib.utils as utils
 
 def match_n_cost(image_mask_label_array, image_transformed, no_wavelets, resized_size, match_ite, relative_weight):
-    """
-    This method causes the graph on an image from the evaluation set to deform elastically to minimize cost
-    when matched against the stored graphs from the masking ('train') dataset
-    :param image_mask_label_array: image masks from mask ('train') dataset with labels
-    :param image_transformed: image from the evaluation transformation after applying the Gabor stack 
-    :param resized_size: image size the data have been resized to
-    :param match_ite: the number of iterations allowed for matching to a particular mask
-    :param relative_weight: relative weight of the two costs (the cost from matching the vertex and the 
-    						cost from deforming the edges)
-    """
+	"""
+	This method causes the graph on an image from the evaluation set to deform elastically to minimize cost
+	when matched against the stored graphs from the masking ('train') dataset
+	:param image_mask_label_array: image masks from mask ('train') dataset with labels
+	:param image_transformed: image from the evaluation transformation after applying the Gabor stack 
+	:param resized_size: image size the data have been resized to
+	:param match_ite: the number of iterations allowed for matching to a particular mask
+	:param relative_weight: relative weight of the two costs (the cost from matching the vertex and the 
+							cost from deforming the edges)
+	"""
 
     initial_positions = list()
 
@@ -117,6 +117,7 @@ def match_n_cost(image_mask_label_array, image_transformed, no_wavelets, resized
 
 			sum_all_vertices = 0.
 
+			# normalization facots for cost from vertex computed
 			for row in range(resized_size//2):
 				for col in range(resized_size//2):
 					sum_per_vertex = square_image_mask_absolute = square_image_mask_local_movement = 0
@@ -129,11 +130,14 @@ def match_n_cost(image_mask_label_array, image_transformed, no_wavelets, resized
 					sum_per_vertex /= (square_image_mask_absolute*square_image_mask_local_movement)**0.5
 					sum_all_vertices += sum_per_vertex
 		
+			# total cost computed
 			cost = relative_weight*sum_all_edges - sum_all_vertices
 
+			# cost for deformed position of particular mask that gives minimum cost
 			if(cost < min_cost_local_image_mask_count or ite == 0):
 				min_cost_local_image_mask_count = cost
 
+		# cost for mask that gives minimum cost among all masks
 		if(min_cost_local_image_mask_count < min_cost_global or image_mask_count == 0):
 			min_cost_global = min_cost_local_image_mask_count
 			image_mask_index_min_cost_global = image_mask_count
@@ -141,6 +145,13 @@ def match_n_cost(image_mask_label_array, image_transformed, no_wavelets, resized
 	return image_mask_label_array[image_mask_index_min_cost_global,2]
 
 def mask(mask_data, no_wavelets, resized_size, hyperparameter_list):
+	"""
+	This method stores the masks from the mask ('train') set
+	:param mask_data: mask/'train' dataset
+	:param no_wavelets: number of wavelets in the Gabor stack (number of directions * number of frequencies)
+	:param resized_size: image size the data have been resized to
+	:param hyperparameter_list: list for different Gabor hyperparameters
+	"""
 
     # directory traversal
     file_list=[]
@@ -180,6 +191,17 @@ def mask(mask_data, no_wavelets, resized_size, hyperparameter_list):
 
 def eval(eval_data, mask_data, resized_size, image_mask_label_array, no_wavelets, log, hyperparameter_list, match_ite, \
 		relative_weight):
+	"""
+	This method stores the masks from the mask ('train') set
+	:param eval_data: evaluation dataset
+	:param mask_data: mask/'train' dataset
+	:param resized_size: image size the data have been resized to
+	:param image_mask_label_array: image masks from mask ('train') dataset with labels
+	:param no_wavelets: number of wavelets in the Gabor stack (number of directions * number of frequencies)
+	:param log: log file
+	:param hyperparameter_list: list for different Gabor hyperparameters
+	:param match_ite: the number of iterations allowed for matching to a particular mask
+	"""
 
     # directory traversal
     file_list=[]
