@@ -6,8 +6,19 @@ from time import gmtime, strftime
 from lib.cmdparser import parser
 import lib.utils as utils
 
-def match_n_cost(image_mask_label_array, image_transformed, resized_size, match_ite, relative_weight):
-	initial_positions = list()
+def match_n_cost(image_mask_label_array, image_transformed, no_wavelets, resized_size, match_ite, relative_weight):
+    """
+    This method causes the graph on an image from the evaluation set to deform elastically to minimize cost
+    when matched against the stored graphs from the masking ('train') dataset
+    :param image_mask_label_array: image masks from mask ('train') dataset with labels
+    :param image_transformed: image from the evaluation transformation after applying the Gabor stack 
+    :param resized_size: image size the data have been resized to
+    :param match_ite: the number of iterations allowed for matching to a particular mask
+    :param relative_weight: relative weight of the two costs (the cost from matching the vertex and the 
+    						cost from deforming the edges)
+    """
+
+    initial_positions = list()
 
 	for row in range(10):
 		for col in range(10):
@@ -15,11 +26,13 @@ def match_n_cost(image_mask_label_array, image_transformed, resized_size, match_
 
 	min_cost_global = image_mask_index_min_cost_global = 0.
 
+	# iterating through different masks stored from the mask set
 	for image_mask_count in range(image_mask_label_array.shape[0]):
 		print('Matching with mask no.:{}'.format(image_mask_count))
 		image_mask = image_mask_label_array[image_mask_count, 0]
 		image_mask_absolute = np.absolute(image_mask)
 		min_cost_local_image_mask_count = float('inf')
+		# running match for 'match_ite' iterations
 		for ite in range(match_ite):
 			new_positions = list()
 			if ite>0:
@@ -49,7 +62,7 @@ def match_n_cost(image_mask_label_array, image_transformed, resized_size, match_
 			else:
 				new_positions = initial_positions
 
-			image_mask_local_movement = np.empty((8,resized_size//2,resized_size//2),'complex128')
+			image_mask_local_movement = np.empty((no_wavelets,resized_size//2,resized_size//2),'complex128')
 
 			row = 0
 			col = 0
@@ -62,6 +75,7 @@ def match_n_cost(image_mask_label_array, image_transformed, resized_size, match_
 
 			sum_all_edges = 0.
 
+			# calculating cost due to edge deformation by calculating the sum of all edge lengths
 			for position_count in range(len(new_positions)):
 				sum_surrounding_edge_node = 0
 				if position_count - 10 < 0:
@@ -106,7 +120,7 @@ def match_n_cost(image_mask_label_array, image_transformed, resized_size, match_
 			for row in range(resized_size//2):
 				for col in range(resized_size//2):
 					sum_per_vertex = square_image_mask_absolute = square_image_mask_local_movement = 0
-					for wavelet_no in range(8):
+					for wavelet_no in range(no_wavelets):
 						sum_per_vertex += image_mask_absolute[row,col,wavelet_no]\
 										*image_mask_local_movement_abs[row,col,wavelet_no]
 						square_image_mask_absolute += (image_mask_absolute[row,col,wavelet_no])**2
@@ -126,7 +140,7 @@ def match_n_cost(image_mask_label_array, image_transformed, resized_size, match_
 
 	return image_mask_label_array[image_mask_index_min_cost_global,2]
 
-def mask(mask_data, resized_size, hyperparameter_list):
+def mask(mask_data, no_wavelets, resized_size, hyperparameter_list):
 
     # directory traversal
     file_list=[]
@@ -146,9 +160,9 @@ def mask(mask_data, resized_size, hyperparameter_list):
 								k_max=hyperparameter_list[3], \
 								k_fac=hyperparameter_list[4])
 		image_transformed = gabor_wavelets.transform(image)
-		image_mask = np.empty((8, resized_size//2, resized_size//2),'complex128')
+		image_mask = np.empty((no_wavelets, resized_size//2, resized_size//2),'complex128')
 
-		for wavelet_no in range(8):
+		for wavelet_no in range(no_wavelets):
 			for row in range(0,resized_size,2):
 				for col in range(0,resized_size,2):
 					image_mask[wavelet_no, row/2, col/2] = image_transformed[wavelet_no, row, col]
@@ -164,7 +178,7 @@ def mask(mask_data, resized_size, hyperparameter_list):
 
 		return image_mask_label_array
 
-def eval(eval_data, mask_data, resized_size, image_mask_label_array, log, hyperparameter_list, match_ite, \
+def eval(eval_data, mask_data, resized_size, image_mask_label_array, no_wavelets, log, hyperparameter_list, match_ite, \
 		relative_weight):
 
     # directory traversal
@@ -188,8 +202,8 @@ def eval(eval_data, mask_data, resized_size, image_mask_label_array, log, hyperp
    								k_fac=hyperparameter_list[4])
 		image_transformed = gabor_wavelets.transform(image)
 
-		match_file_path = match_n_cost(image_mask_label_array, image_transformed, resized_size, match_ite, \
-									relative_weight)
+		match_file_path = match_n_cost(image_mask_label_array, image_transformed, no_wavelets, resized_size, \
+									match_ite, relative_weight)
 		match_label = match_file_path[len(match_file_path):len(match_file_path)+1]
 
 		if match_label == label:
@@ -227,14 +241,16 @@ def main():
 	utils.extract(args.dataset, args.raw_data)
 	utils.resize(args.mask_data, args.resized_size)
 	utils.resize(args.eval_data, args.resized_size)
-	utils.deskew(args.mask_data)
+	utils.deskew(args.image_mask_countdata)
 	utils.deskew(args.eval_data)
 
 	hyperparameter_list = [args.no_scales, args.no_directions, args.sigma,\
 						 args.frequency_max, args.frequency_factor]
-	image_mask_label_array = mask(args.mask_data, args.resized_size, hyperparameter_list)
-	eval_accuracy = eval(args.eval_data, args.mask_data, args.resized_size, args.image_mask_label_array, log, \
-						hyperparameter_list, args.match_ite, args.relative_weight)
+	image_mask_label_array = mask(args.mask_data, args.no_scales*args.no_directions, \
+								args.resized_size, hyperparameter_list)
+	eval_accuracy = eval(args.eval_data, args.mask_data, args.resized_size, args.image_mask_label_array, \
+						args.no_scales*args.no_directions, log, hyperparameter_list, args.match_ite, \
+						args.relative_weight)
 
 	print("Final Evaluation Accuracy:{eval_accuracy:.3f}".format(eval_accuracy))
 	log.write("Final Evaluation Accuracy:{eval_accuracy:.3f}".format(eval_accuracy))
