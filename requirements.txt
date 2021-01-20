@@ -1,5 +1,5 @@
 numpy==1.12.0
 python_mnist==0.3
-Pillow==5.2.0
+Pillow==7.1.0
 bob==5.0.0
 mnist==0.2.1
